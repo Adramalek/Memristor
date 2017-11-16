@@ -2,7 +2,7 @@
 
 Plot Voltage, Current and Conductivity figures easy with 
 With [memexp.py](memexp.py) script.
-Collect data from video source with[video_parser.py](video_parser.py).
+Collect data from video source with [video_parser.py](video_parser.py).
 Simply use both in command line.
 
 ## Getting started
