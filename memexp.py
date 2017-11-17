@@ -50,7 +50,7 @@ def concat_diff(df, external_df, merge_by):
 def df_filter(df, **col_cond):
     filtered = df
     if col_cond:
-        for key, val in col_cond:
+        for key, val in col_cond.items():
             filtered = filtered[col_cond[key](filtered[key])]
     return filtered
 
@@ -81,6 +81,7 @@ def plot(df, axis_y, ymunit, ylim=(-0.3, 100), axis_x='Time', xmunit='sec', shap
     plt.legend()
     plt.savefig(os.path.join(result_plot_path, (file_name if file_name else axis_y)+'.png'))
 
+
 if __name__ == '__main__':
     meas_dir = 'meas'
     read_val = -5
@@ -88,23 +89,30 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('data_path', type=str, help='Specifies a source data location')
     parser.add_argument('data_dir_name', type=str, help='Specifies a results storage location')
-    parser.add_argument('--external_csv', type=str, nargs='?', default=None,
+    parser.add_argument('-E', '--external_csv', type=str, metavar='location', nargs='?', default=None,
                         help='Specifies external source to concatenate (excluding share columns)')
-    parser.add_argument('--concat_by', type=str, nargs='?', require='--external_csv' in argv, default='Time',
+    parser.add_argument('-C', '--concat_by', type=str, nargs='?', metavar='column', required='--external_csv' in argv,
+                        default='Time',
                         help='Specifies a share column to restrict rows count.'
                              '\nRequires --external_csv option to be specified')
-    parser.add_argument('--split_packs', action='store_true',
+    parser.add_argument('-P', '--split_packs', action='store_true',
                         help='Enables splitting of source data into individual packs (based on time)')
-    parser.add_argument('--normal_csv', action='store_true',
+    parser.add_argument('-N', '--normal_csv', action='store_true',
                         help='Indicates converting source data to normal csv format as unnecessary.')
-    parser.add_argument('--rep_separator', type=str, require='--normal_csv' not in argv, default=';',
-                        help='Specifies a target disgusting separator which must be replaced!'
+    parser.add_argument('-S', '--rep_separator', type=str, nargs='?', metavar='char', default=';',
+                        help='Specifies a target disgusting separator which must be replaced! ";" by default.'
                              '\nCannot be specified with --normal_csv option.')
-    parser.add_argument('--rep_decimal_sign', type=str, require='--normal_csv' not in argv, default=',',
-                        help='Specifies a target disgusting decimal sign separator which must be replaced!'
+    parser.add_argument('-D', '--rep_decimal_sign', type=str, nargs='?', metavar='char', default=',',
+                        help='Specifies a target disgusting decimal sign which must be replaced! "," by default.'
                              '\nCannot be specified with --normal_csv option.')
 
     args = parser.parse_args()
+
+    if '-N' in argv or '--normal_csv' in argv:
+        if '-S' in argv or '--rep_separator' in argv:
+            parser.error('Option -S/--rep_separator cannot be specified with option -N/--normal_csv')
+        if '-D' in argv or '--rep_decimal_sign' in argv:
+            parser.error('Option -D/--rep_decimal_sign cannot be specified with option -N/--normal_csv')
 
     if not os.path.isfile(args.data_path) or not os.path.exists(args.data_path):
         parser.error('Either '+args.data_path+' is not file or it does not exist.')
@@ -114,7 +122,7 @@ if __name__ == '__main__':
     if not os.path.exists(meas_dir):
         os.makedirs(meas_dir)
 
-    data_dir = os.path.join(meas_dir, args.data_dir_name)
+    data_dir = args.data_dir_name  # os.path.join(meas_dir, args.data_dir_name)
     if not os.path.exists(data_dir):
         os.makedirs(data_dir)
 

@@ -78,13 +78,14 @@ def find_digits(image):
     for c in cnts:
         # compute the bounding box of the contour
         (x, y, w, h) = cv2.boundingRect(c)
-
+        cv2.imwrite('test.png',)
         # if the contour is sufficiently large, it must be a digit
         if w >= 15 and (30 <= h <= 40):
             digit_cnts.append(c)
 
     # sort the contours from left-to-right, then initialize the
     # actual digits themselves
+    print(digit_cnts)
     digit_cnts = contours.sort_contours(digit_cnts, method="left-to-right")[0]
     digits = []
 
