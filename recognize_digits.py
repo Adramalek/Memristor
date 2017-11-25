@@ -32,10 +32,13 @@ DIGITS_LOOKUP = {
 def find_digits(image):
     # pre-process the image by resizing it, converting it to
     # graycale, blurring it, and computing an edge map
-    image = imutils.resize(image, height=500)
+    image = imutils.resize(image, height=300)
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     blurred = cv2.GaussianBlur(gray, (5, 5), 0)
     edged = cv2.Canny(blurred, 50, 200, 255)
+
+    cv2.imshow('preproc', edged)
+    cv2.waitKey(0)
 
     # find contours in the edge map, then sort them by their
     # size in descending order
@@ -43,6 +46,10 @@ def find_digits(image):
     cnts = cnts[0] if imutils.is_cv2() else cnts[1]
     cnts = sorted(cnts, key=cv2.contourArea, reverse=True)
     display_cnt = None
+
+    # cv2.drawContours(image, cnts, -1, (0, 255, 0), 3)
+    # cv2.imshow('counters', image)
+    # cv2.waitKey(0)
 
     # loop over the contours
     for c in cnts:
@@ -56,14 +63,22 @@ def find_digits(image):
             display_cnt = approx
             break
 
+    # print(display_cnt)
+
+    # cv2.drawContours(image, [display_cnt], 0, (0, 255, 0), 3)
+    # cv2.imshow('counters', image)
+    # cv2.waitKey(0)
+
     # extract the thermostat display, apply a perspective transform
     # to it
-    warped = four_point_transform(gray, display_cnt.reshape(4, 2))
+    # warped = four_point_transform(gray, display_cnt.reshape(4, 2))
     # output = four_point_transform(image, display_cnt.reshape(4, 2))
+
+
 
     # threshold the warped image, then apply a series of morphological
     # operations to cleanup the thresholded image
-    thresh = cv2.threshold(warped, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
+    thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (1, 5))
     thresh = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
 
@@ -78,7 +93,6 @@ def find_digits(image):
     for c in cnts:
         # compute the bounding box of the contour
         (x, y, w, h) = cv2.boundingRect(c)
-        cv2.imwrite('test.png',)
         # if the contour is sufficiently large, it must be a digit
         if w >= 15 and (30 <= h <= 40):
             digit_cnts.append(c)
