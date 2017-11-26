@@ -1,11 +1,15 @@
 cycler==0.10.0
+future==0.16.0
 imutils==0.4.3
+iso8601==0.1.12
 matplotlib==2.1.0
 numpy==1.13.3
 opencv-python==3.3.0.10
 pandas==0.21.0
 pyparsing==2.2.0
+pyserial==3.4
 python-dateutil==2.6.1
 pytz==2017.3
+PyYAML==3.12
 scipy==1.0.0
 six==1.11.0
