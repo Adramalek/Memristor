@@ -2,17 +2,20 @@ import cv2
 import argparse
 from comm import Comp
 from threading import Thread, Event
-from os import remove
+from os import remove, mkdir
 from os.path import join, exists
-from utils import init_log
+from utils import init_log, positive
 import logging
 
 
 class Viwriter(object):
-    def __init__(self, stopper=None, path='meas'):
+    def __init__(self, stopper=None, path='meas', flip=False):
         super().__init__()
+        if not exists(path):
+            mkdir(path)
         self.path = path
         self._cam = cv2.VideoCapture(0)
+        self._flip = flip
         w = self._cam.get(cv2.CAP_PROP_FRAME_WIDTH)
         h = self._cam.get(cv2.CAP_PROP_FRAME_HEIGHT)
         self._size = (int(w), int(h))
@@ -52,6 +55,8 @@ class Viwriter(object):
                 ret, frame = self._cam.read()
                 if not ret:
                     break
+                if self._flip:
+                    frame = cv2.flip(frame, -1)
                 # cv2.imshow('vicap', frame)
                 self._out.write(frame)
             self._out.release()
@@ -99,11 +104,22 @@ def experiment(port_name, dir_path, initial_high=10, initial_low=10, max_period=
     comp.close()
 
 
-if __name__ == '__main__':
+def init_argparser():
     parser = argparse.ArgumentParser()
     parser.add_argument('port', type=str)
     parser.add_argument('-D', '--storage_path', type=str, metavar='dir', nargs='?', default='meas')
+    parser.add_argument('-H', '--init_high', type=int, metavar='ms', nargs='?', default=10)
+    parser.add_argument('-L', '--init_low', type=int, metavar='ms', nargs='?', default=10)
     parser.add_argument('-P', '--max_period', type=int, metavar='ms', nargs='?', default=10000)
+    parser.add_argument('-sh', '--step_high', type=int, metavar='ms', nargs='?', default=10)
+    parser.add_argument('-sl', '--step_low', type=int, metavar='ms', nargs='?', default=10)
+    parser.add_argument('-f', '--flip', action='store_true')
+
+    return parser
+
+
+if __name__ == '__main__':
+    parser = init_argparser()
     args = parser.parse_args()
 
     init_log('experiment.log')

@@ -12,23 +12,6 @@ def init_log(file_name):
     logging.basicConfig(filename=file_name, level=logging.INFO, format='[%(asctime)s]%(levelname)s:%(message)s')
 
 
-def _assert_all_positive(*args):
-    for arg in args:
-        if arg <= 0:
-                raise ValueError('Arguments should be positive')
-
-
-def positive(is_method=False):
-    def decorator(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            lst = args[1:] if is_method else args
-            _assert_all_positive(*lst)
-            return func(*args, **kwargs)
-        return wrapper
-    return decorator
-
-
 def iterable_equal(iter1, iter2):
     if len(iter1) == len(iter2):
         for o1, o2 in zip(iter1, iter2):
@@ -36,18 +19,6 @@ def iterable_equal(iter1, iter2):
                 return False
         return True
     return False
-
-
-def loops(times):
-    def num_wrapper(func):
-        @wraps(func)
-        def func_wrapper(*args, **kwargs):
-            count = times
-            while count > 0:
-                func(*args, **kwargs)
-                count -= 1
-        return func_wrapper
-    return num_wrapper
 
 
 def waiter(start_message, end_message):
@@ -110,3 +81,28 @@ def static_var(varname, value):
         setattr(func, varname, value)
         return func
     return decorate
+
+
+def _assert_all_positive(*args):
+    for arg in args:
+        if arg <= 0:
+                raise ValueError('Arguments should be positive')
+
+
+@overload
+def positive(is_method=False):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            lst = args[1:] if is_method else args
+            _assert_all_positive(*lst)
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+
+@positive.register(int)
+def _(val):
+    if val <= 0:
+        raise ValueError('Argument should be positive: {}'.format(val))
+    return val

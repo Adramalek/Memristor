@@ -82,10 +82,7 @@ def plot(df, axis_y, ymunit, ylim=(-0.3, 100), axis_x='Time', xmunit='sec', shap
     plt.savefig(os.path.join(result_plot_path, (file_name if file_name else axis_y)+'.png'))
 
 
-if __name__ == '__main__':
-    meas_dir = 'meas'
-    read_val = -5
-
+def init_argparser():
     parser = argparse.ArgumentParser()
     parser.add_argument('data_path', type=str, help='Specifies a source data location')
     parser.add_argument('data_dir_name', type=str, help='Specifies a results storage location')
@@ -105,7 +102,12 @@ if __name__ == '__main__':
     parser.add_argument('-D', '--rep_decimal_sign', type=str, nargs='?', metavar='char', default=',',
                         help='Specifies a target disgusting decimal sign which must be replaced! "," by default.'
                              '\nCannot be specified with --normal_csv option.')
+    return parser
 
+if __name__ == '__main__':
+    meas_dir = 'meas'
+    read_val = -5
+    parser = init_argparser()
     args = parser.parse_args()
 
     if '-N' in argv or '--normal_csv' in argv:
