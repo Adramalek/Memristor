@@ -63,3 +63,7 @@ pyvenv.cfg
 .venv
 pip-selfcheck.json
 test.py
+meas
+__pycache__
+*.py[cod]
+*.log
