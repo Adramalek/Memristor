@@ -62,7 +62,7 @@ fabric.properties
 pyvenv.cfg
 .venv
 pip-selfcheck.json
-test.py
+test.*
 meas
 __pycache__
 *.py[cod]

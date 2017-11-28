@@ -1,9 +1,9 @@
 from serial import Serial
-from utils import positive, waiter
+from utils import positive_args
 import logging
 
 
-class Comp(object):
+class COMPortController(object):
     def __init__(self, name, baudrate=115200, cr='\r', lf='\n', timeout=None, tries=10):
         self.ser = Serial(name, timeout=timeout)  # open serial port
         self.ser.baudrate = baudrate
@@ -12,6 +12,7 @@ class Comp(object):
         self.cr = cr.encode('ascii')
         self.lf = lf.encode('ascii')
         self.crlf = cr + lf
+        logging.info('Open port {}'.format(name))
 
     @property
     def timeout(self):
@@ -23,6 +24,7 @@ class Comp(object):
 
     def close(self):
         self.ser.close()
+        logging.info('Close port')
 
     # start experiment
     def start(self):
@@ -36,7 +38,7 @@ class Comp(object):
         logging.info('Finished')
         return 0
 
-    def end_pulse(self):
+    def reset(self):
         logging.info('Start resetting')
         ans = "DONE".encode('ascii')
         line = self.ser.read_until(self.cr, 30)
@@ -48,33 +50,33 @@ class Comp(object):
 
     def experiment(self):
         if self.start() == 0:
-            if self.end_pulse() == 0:
+            if self.reset() == 0:
                 return 0
         return 1
 
     # set width of high level ms
-    @positive(is_method=True)
+    @positive_args(is_method=True)
     def set_high_del(self, delay):
         cmd = ("psetpl " + str(delay) + "\r").encode('ascii')
         ans = ("Set_Pulse=" + str(delay)).encode('ascii')
-        logging.info(cmd.decode().replace('\n', ''))
+        logging.info(cmd.decode().replace('\n', '').replace('\r', ''))
         self.ser.write(cmd)
         line = self.ser.read_until(self.cr, 30)
-        logging.info(line.decode().replace('\n', ''))
+        logging.info(line.decode().replace('\n', '').replace('\r', ''))
         if ans in line:
             return 0
         else:
             return 1
 
     # set width of low level ms
-    @positive(is_method=True)
+    @positive_args(is_method=True)
     def set_low_del(self, delay):
         cmd = ("psetpdl " + str(delay) + "\r").encode('ascii')
         ans = ("Set_Pulse_Delay=" + str(delay)).encode('ascii')
-        logging.info(cmd.decode().replace('\n', ''))
+        logging.info(cmd.decode().replace('\n', '').replace('\r', ''))
         self.ser.write(cmd)
         line = self.ser.read_until(self.cr, 30)
-        logging.info(line.decode().replace('\n', ''))
+        logging.info(line.decode().replace('\n', '').replace('\r', ''))
         if ans in line:
             return 0
         else:

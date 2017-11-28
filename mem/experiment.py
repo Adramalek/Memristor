@@ -1,11 +1,10 @@
 import cv2
-import argparse
-from comm import Comp
 from threading import Thread, Event
 from os import remove, mkdir
 from os.path import join, exists
-from utils import init_log, positive
 import logging
+
+__all__ = ['Viwriter']
 
 
 class Viwriter(object):
@@ -35,12 +34,6 @@ class Viwriter(object):
                 return None
         return magic
 
-    # @_block
-    # def start(self):
-    #     print('started')
-    #     super().start()
-    #
-    # @start.register(str)
     @_block
     def start(self, file_name):
         self._stopper.clear()
@@ -75,52 +68,3 @@ class Viwriter(object):
     @_block
     def release(self):
         self._cam.release()
-
-
-def experiment(port_name, dir_path, initial_high=10, initial_low=10, max_period=10000, high_step=10, low_step=10):
-    comp = Comp(port_name)
-    viwriter = Viwriter(path=dir_path)
-    high = initial_high
-    period = high+initial_low
-    low = period-high
-    while period <= max_period:
-        while low > 0:
-            comp.timeout = 5
-            comp.set_high_del(high)
-            comp.set_low_del(low)
-            logging.info("Run H{} L{}".format(high, low))
-            comp.timeout = None
-            viwriter.start('P{}H{}'.format(period, high))
-            comp.start()
-            viwriter.stop()
-            comp.end_pulse()
-            high += high_step
-            low = period-high
-        high = initial_high
-        period += low_step
-        low = period - high
-
-    viwriter.release()
-    comp.close()
-
-
-def init_argparser():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('port', type=str)
-    parser.add_argument('-D', '--storage_path', type=str, metavar='dir', nargs='?', default='meas')
-    parser.add_argument('-H', '--init_high', type=int, metavar='ms', nargs='?', default=10)
-    parser.add_argument('-L', '--init_low', type=int, metavar='ms', nargs='?', default=10)
-    parser.add_argument('-P', '--max_period', type=int, metavar='ms', nargs='?', default=10000)
-    parser.add_argument('-sh', '--step_high', type=int, metavar='ms', nargs='?', default=10)
-    parser.add_argument('-sl', '--step_low', type=int, metavar='ms', nargs='?', default=10)
-    parser.add_argument('-f', '--flip', action='store_true')
-
-    return parser
-
-
-if __name__ == '__main__':
-    parser = init_argparser()
-    args = parser.parse_args()
-
-    init_log('experiment.log')
-    experiment(args.port, args.storage_path, max_period=args.max_period)

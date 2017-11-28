@@ -1,9 +1,20 @@
 from functools import wraps, update_wrapper
 from threading import Thread, Event
-from os import remove
-from os.path import exists
+from os import remove, mkdir
+from os.path import exists, isfile
 from time import sleep
 import logging
+
+
+__all__ = ['logging',
+           'iterable_equal',
+           'waiter',
+           'overload',
+           'storage_dir',
+           'static_var',
+           'positive',
+           'positive_args',
+           'assert_all_positive']
 
 
 def init_log(file_name):
@@ -75,7 +86,6 @@ def overload(func):
     return wrapper
 
 
-# decorator
 def static_var(varname, value):
     def decorate(func):
         setattr(func, varname, value)
@@ -83,26 +93,39 @@ def static_var(varname, value):
     return decorate
 
 
-def _assert_all_positive(*args):
+def assert_all_positive(*args):
     for arg in args:
         if arg <= 0:
                 raise ValueError('Arguments should be positive')
 
 
-@overload
-def positive(is_method=False):
+def positive_args(is_method=False):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
             lst = args[1:] if is_method else args
-            _assert_all_positive(*lst)
+            assert_all_positive(*lst)
             return func(*args, **kwargs)
         return wrapper
     return decorator
 
 
-@positive.register(int)
-def _(val):
+def storage_dir(path):
+    print(path)
+    if type(path) is not str:
+        raise ValueError('Argument must be a path')
+    if not exists(path):
+        mkdir(path)
+    return path
+
+
+def positive(val):
+    val = int(val)
     if val <= 0:
-        raise ValueError('Argument should be positive: {}'.format(val))
+        raise ValueError('Argument must be a positive number')
     return val
+
+
+def exists_file(path):
+    if type(path) is not str or not exists(path) or not isfile(path):
+        raise ValueError('Argument must be a path')
