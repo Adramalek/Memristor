@@ -111,7 +111,6 @@ def positive_args(is_method=False):
 
 
 def storage_dir(path):
-    print(path)
     if type(path) is not str:
         raise ValueError('Argument must be a path')
     if not exists(path):

@@ -2,18 +2,32 @@ import argparse
 import logging
 import pandas as pd
 from utils import init_log, storage_dir, positive, exists_file, static_var
-from mem.experiment import Viwriter
+from mem.experiment import *
 from comm import COMPortController
 from mem.plot import *
 from os.path import join, exists, isfile
 from os import mkdir, listdir
 from sys import argv
+from threading import Event
 
 __all__ = ['reset',
            'experiment',
            'init_argparser']
 
 
+def root_dir(func):
+    def wrapper(*args, **kwargs):
+        if not exists(args[0].memristor):
+            mkdir(args[0].memristor)
+        meas = join(args[0].memristor, args[0].storage_path)
+        if not exists(meas):
+            mkdir(meas)
+        setattr(args[0], 'meas', meas)
+        func(*args, **kwargs)
+    return wrapper
+
+
+@root_dir
 def reset(args):
     init_log('resetting.log')
     comp = COMPortController(args.port)
@@ -22,14 +36,16 @@ def reset(args):
     pass
 
 
+@root_dir
 def experiment(args):
-    init_log('experiment.log')
+    init_log(join(args.meas, 'experiment.log'))
     comp = COMPortController(args.port)
-    viwriter = Viwriter(path=args.storage_path, flip=args.flip)
+    viwriter = Viwriter(path=join(args.meas, args.video_storage), flip=args.flip)
     high = args.init_high
     period = high + args.init_low
     low = period - high
     iteration = 1
+    stopper = Event()
     while period <= args.max_period:
         while low > 0:
             logging.info('Iteration {}'.format(iteration))
@@ -39,13 +55,16 @@ def experiment(args):
             logging.info("Run H{} L{}".format(high, low))
             comp.timeout = None
             viwriter.start('P{}H{}'.format(period, high))
+            write_voltage('P{}H{}.csv'.format(period, high), high, low, stopper)
             comp.start()
+            stop_writing(stopper)
             viwriter.stop()
             comp.reset()
             high += args.step_high
             low = period - high
             logging.info('\n')
             iteration += 1
+            stopper.clear()
         high = args.init_high
         period += args.step_low
         low = period - high
@@ -54,6 +73,7 @@ def experiment(args):
     comp.close()
 
 
+@root_dir
 def plot(args):
     read_val = -5
 
@@ -120,16 +140,24 @@ def plot(args):
             figure += 1
 
 
+@root_dir
+def dummy(args):
+    print('Hello')
+
+
 def init_argparser():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-M', '--meas_dir', type=storage_dir, metavar='dir', nargs='?', default='meas')
+    parser.add_argument('-D', '--storage_path', type=str, metavar='dir', nargs='?', default='meas')
+    parser.add_argument('memristor', type=str, metavar='name')
     subparsers = parser.add_subparsers()
+
+    parser_dummy = subparsers.add_parser('dummy')
+    parser_dummy.set_defaults(func=dummy)
 
     parser_exp = subparsers.add_parser('exp')
     parser_exp.add_argument('port', type=str)
-    parser_exp.add_argument('-D', '--storage_path', type=storage_dir, metavar='dir', nargs='?', default='meas')
-    parser_exp.add_argument('-V', '--video_storage', type=storage_dir, metavar='dir', nargs='?',
-                            default=join('meas', 'video'))
+    parser_exp.add_argument('-V', '--video_storage', type=str, metavar='dir', nargs='?',
+                            default='video')
     parser_exp.add_argument('-H', '--init_high', type=positive, metavar='ms', nargs='?', default=10)
     parser_exp.add_argument('-L', '--init_low', type=positive, metavar='ms', nargs='?', default=10)
     parser_exp.add_argument('-P', '--max_period', type=positive, metavar='ms', nargs='?', default=10000)

@@ -4,7 +4,9 @@ from os import remove, mkdir
 from os.path import join, exists
 import logging
 
-__all__ = ['Viwriter']
+__all__ = ['Viwriter',
+           'write_voltage',
+           'stop_writing']
 
 
 class Viwriter(object):
@@ -68,3 +70,30 @@ class Viwriter(object):
     @_block
     def release(self):
         self._cam.release()
+
+
+def write_voltage(path, high_time, low_time, stopper, step=10e-4, high_val=1, low_val=0):
+    def func(stopper):
+        with open(path, 'w') as result:
+            common_time = 0
+            high = True
+            time = high_time
+            while not stopper.is_set():
+                if high:
+                    val = high_val
+                    pass
+                else:
+                    val = low_val
+                    pass
+                result.write('{},{}'.format(common_time, val))
+                common_time += step
+                time -= step
+                if time <= 0:
+                    high = not high
+                    time = high_time if high else low_time
+    thread = Thread(target=func, args=(stopper,))
+    thread.start()
+
+
+def stop_writing(stopper):
+    stopper.set()
