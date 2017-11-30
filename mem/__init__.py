@@ -168,6 +168,7 @@ def init_argparser():
 
     parser_reset = subparsers.add_parser('reset')
     parser_reset.add_argument('port', type=str)
+    parser_reset.add_argument('-T', '--time', type=positive, metavar='sec', nargs='?', default=120)
     parser_reset.set_defaults(func=reset)
 
     parser_plot = subparsers.add_parser('plot')

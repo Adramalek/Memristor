@@ -48,6 +48,11 @@ class COMPortController(object):
         logging.info('Finished')
         return 0
 
+    def set_reset(self, time):
+        cmd = ('preset ' + str(time) + '\r').encode('ascii')
+        ans = "DONE".encode('ascii')
+        pass
+
     def experiment(self):
         if self.start() == 0:
             if self.reset() == 0:
