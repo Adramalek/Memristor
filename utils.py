@@ -3,6 +3,7 @@ from threading import Thread, Event
 from os import remove, mkdir
 from os.path import exists, isfile
 from time import sleep
+from datetime import datetime
 import logging
 
 
@@ -15,6 +16,30 @@ __all__ = ['logging',
            'positive',
            'positive_args',
            'assert_all_positive']
+
+
+def do_while(predicate):
+
+    pass
+
+
+def timer(func):
+    def wrapper(*args, **kwargs):
+        def clock(event):
+            logging.info('Start Timer')
+            time = datetime.now()
+            while not event.is_set():
+                pass
+            time = datetime.now() - time
+            time = time.seconds
+            logging.info('Time passed: {} sec'.format(time))
+        stopper = Event()
+        thread = Thread(target=clock, args=(stopper,))
+        thread.start()
+        func(*args, **kwargs)
+        stopper.set()
+        thread.join()
+    return wrapper
 
 
 def init_log(file_name):

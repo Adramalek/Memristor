@@ -6,9 +6,9 @@ from mem.experiment import *
 from comm import COMPortController
 from mem.plot import *
 from os.path import join, exists, isfile
-from os import mkdir, listdir
+from os import mkdir, listdir, rmdir
+from shutil import rmtree
 from sys import argv
-from threading import Event
 
 __all__ = ['reset',
            'experiment',
@@ -19,6 +19,9 @@ def root_dir(func):
     def wrapper(*args, **kwargs):
         if not exists(args[0].memristor):
             mkdir(args[0].memristor)
+        else:
+            rmtree(args[0].memristor)
+            # rmdir(args[0].memristor)
         meas = join(args[0].memristor, args[0].storage_path)
         if not exists(meas):
             mkdir(meas)
@@ -45,7 +48,7 @@ def experiment(args):
     period = high + args.init_low
     low = period - high
     iteration = 1
-    stopper = Event()
+    # stopper = Event()
     while period <= args.max_period:
         while low > 0:
             logging.info('Iteration {}'.format(iteration))
@@ -55,19 +58,53 @@ def experiment(args):
             logging.info("Run H{} L{}".format(high, low))
             comp.timeout = None
             viwriter.start('P{}H{}'.format(period, high))
-            write_voltage('P{}H{}.csv'.format(period, high), high, low, stopper)
+            # write_voltage('P{}H{}.csv'.format(period, high), high, low, stopper)
             comp.start()
-            stop_writing(stopper)
+            # stop_writing(stopper)
             viwriter.stop()
             comp.reset()
             high += args.step_high
             low = period - high
             logging.info('\n')
             iteration += 1
-            stopper.clear()
+            # stopper.clear()
         high = args.init_high
         period += args.step_low
         low = period - high
+
+    viwriter.release()
+    comp.close()
+
+
+@root_dir
+def experiment_duty(args):
+    init_log(join(args.meas, 'duty_exp.log'))
+    comp = COMPortController(args.port)
+    viwriter = Viwriter(path=join(args.meas, args.video_storage), flip=args.flip)
+    period = args.period
+    duty = args.duty
+    fix_period = 'P' in args.fix
+    fix_duty = 'D' in args.fix
+    iteration = 1
+
+    while True:
+        while True:
+            logging.info('Iteration {}'.format(iteration))
+            comp.timeout = 10
+            comp.set_duty(duty)
+            comp.set_period(period)
+            logging.info('Run P{} D{}'.format(period, duty))
+            comp.timeout = None
+            viwriter.start('P{}D{}'.format(period, duty))
+            comp.start()
+            viwriter.stop()
+            comp.reset()
+            iteration += 1
+            logging.info('\n')
+            if duty >= 100 or fix_duty:
+                break
+        if period > args.max_period or fix_period:
+            break
 
     viwriter.release()
     comp.close()
@@ -161,15 +198,27 @@ def init_argparser():
     parser_exp.add_argument('-H', '--init_high', type=positive, metavar='ms', nargs='?', default=10)
     parser_exp.add_argument('-L', '--init_low', type=positive, metavar='ms', nargs='?', default=10)
     parser_exp.add_argument('-P', '--max_period', type=positive, metavar='ms', nargs='?', default=10000)
-    parser_exp.add_argument('-sh', '--step_high', type=positive, metavar='ms', nargs='?', default=10)
-    parser_exp.add_argument('-sl', '--step_low', type=positive, metavar='ms', nargs='?', default=10)
+    parser_exp.add_argument('--step_high', type=positive, metavar='ms', nargs='?', default=10)
+    parser_exp.add_argument('--step_low', type=positive, metavar='ms', nargs='?', default=10)
     parser_exp.add_argument('-f', '--flip', action='store_true')
     parser_exp.set_defaults(func=experiment)
 
-    parser_reset = subparsers.add_parser('reset')
-    parser_reset.add_argument('port', type=str)
-    parser_reset.add_argument('-T', '--time', type=positive, metavar='sec', nargs='?', default=120)
-    parser_reset.set_defaults(func=reset)
+    parser_duty = subparsers.add_parser('duty_exp')
+    parser_duty.add_argument('port', type=str)
+    parser_duty.add_argument('-V', '--video_storage', type=str, metavar='dir', nargs='?', default='video')
+    parser_duty.add_argument('-P', '--period', type=positive, metavar='ms', nargs='?', default=20)
+    parser_duty.add_argument('-D', '--duty', type=positive, metavar='%', nargs='?', default=10)
+    parser_duty.add_argument('--fix', choices=['', 'P', 'D', 'PD'], default='')
+    parser_duty.add_argument('--max_period', type=positive, metavar='ms', nargs='?', default=200)
+    parser_duty.add_argument('--step_period', type=positive, metavar='ms', nargs='?', default=10)
+    parser_duty.add_argument('--step_duty', type=positive, metavar='%', nargs='?', default=5)
+    parser_duty.add_argument('-f', '--flip', action='store_true')
+    parser_duty.set_defaults(func=experiment_duty)
+
+    # parser_reset = subparsers.add_parser('reset')
+    # parser_reset.add_argument('port', type=str)
+    # parser_reset.add_argument('-T', '--time', type=positive, metavar='sec', nargs='?', default=120)
+    # parser_reset.set_defaults(func=reset)
 
     parser_plot = subparsers.add_parser('plot')
     parser_plot.add_argument('file', type=exists_file, help='Specifies a source data location')

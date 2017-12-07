@@ -72,7 +72,7 @@ class Viwriter(object):
         self._cam.release()
 
 
-def write_voltage(path, high_time, low_time, stopper, step=10e-4, high_val=1, low_val=0):
+def write_voltage(path, high_time, low_time, stopper, step=10e-2, high_val=1, low_val=0):
     def func(stopper):
         with open(path, 'w') as result:
             common_time = 0

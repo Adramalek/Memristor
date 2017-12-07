@@ -44,6 +44,6 @@ def extract_digits(img_path):
 
 
 if __name__ == '__main__':
-    # cam_test()
-    extract_digits('test.png')
+    cam_test()
+    # extract_digits('test.png')
     pass
